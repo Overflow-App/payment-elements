@@ -1,0 +1,11 @@
+# Code owners for Overflow-App/payment-elements
+#
+# Every change requires review from the Giving team. This also makes the
+# automated type-sync bot PRs (generated index.d.ts / global.d.ts from the
+# private monorepo) require a human review before merge. See PR 14.5.b / 14.5.f.
+
+* @Overflow-App/giving
+
+# The synced type artifacts are generated in the monorepo. Do not hand-edit;
+# changes here are overwritten on the next published release.
+/types/ @Overflow-App/giving

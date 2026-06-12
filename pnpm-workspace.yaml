@@ -1,0 +1,5 @@
+# pnpm v11 settings (no longer read from package.json's "pnpm" field).
+# pnpm 11.6 uses the `allowBuilds` map to approve dependency build scripts.
+# esbuild (pulled in by tsup) needs its postinstall to link the platform binary.
+allowBuilds:
+  esbuild: true
