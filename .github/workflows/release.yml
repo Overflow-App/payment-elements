@@ -1,105 +1,110 @@
 name: Release
 
-# PR 14.5.f (GIV-9138): the public side of the release-triggered, baked-version
-# flow. The npm version is baked once by a human in the private monorepo PR and
-# synced into this repo by the type-sync bot PR. Merging that PR to `main` runs
-# this workflow, which publishes the matching npm version (with provenance) and
-# cuts a 1:1 mirror GitHub Release.
-#
-# Lockstep: the published npm version always equals the monorepo `sdkVersion`.
-# Prereleases (a hyphen in the semver, e.g. 1.2.0-alpha.1) publish under the
-# `next` dist-tag so a bare `npm install` never resolves to a prerelease.
-
 on:
-    push:
-        branches: [main]
-        paths:
-            - package.json
+  push:
+    branches: [main]
+    paths:
+      - package.json
 
 concurrency:
-    group: release-${{ github.ref }}
-    cancel-in-progress: false
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    release:
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write # create the mirror GitHub Release
-            id-token: write # npm provenance via OIDC
-        steps:
-            - uses: actions/checkout@v4
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
 
-            - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 20
-                  cache: pnpm
-                  registry-url: https://registry.npmjs.org
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
-            - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
 
-            - name: Read package version
-              id: pkg
-              run: |
-                  VERSION="$(node -p "require('./package.json').version")"
-                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-                  if [[ "${VERSION}" == *-* ]]; then
-                    echo "tag=next" >> "$GITHUB_OUTPUT"
-                    echo "prerelease=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "tag=latest" >> "$GITHUB_OUTPUT"
-                    echo "prerelease=false" >> "$GITHUB_OUTPUT"
-                  fi
+      - run: pnpm install --frozen-lockfile
 
-            - name: Check if version is already published
-              id: check
-              run: |
-                  NAME="$(node -p "require('./package.json').name")"
-                  VERSION="${{ steps.pkg.outputs.version }}"
-                  if pnpm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
-                    echo "Version ${VERSION} already published; skipping."
-                    echo "should_publish=false" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "should_publish=true" >> "$GITHUB_OUTPUT"
-                  fi
+      - name: Read package version
+        id: pkg
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ "${VERSION}" == *-* ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
-            - name: Typecheck
-              if: steps.check.outputs.should_publish == 'true'
-              run: pnpm typecheck
+      - name: Check if version is already published
+        id: check
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          VERSION="${{ steps.pkg.outputs.version }}"
+          if pnpm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "Version ${VERSION} already published; skipping."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
-            - name: Test
-              if: steps.check.outputs.should_publish == 'true'
-              run: pnpm test
+      - name: Typecheck
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm typecheck
 
-            - name: Build
-              if: steps.check.outputs.should_publish == 'true'
-              run: pnpm build
+      - name: Test
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm test
 
-            - name: Validate published types (are-the-types-wrong)
-              if: steps.check.outputs.should_publish == 'true'
-              run: pnpm attw
+      - name: Build
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm build
 
-            - name: Publish to npm
-              if: steps.check.outputs.should_publish == 'true'
-              run: pnpm publish --no-git-checks --access public --provenance --tag ${{ steps.pkg.outputs.tag }}
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Validate published types (are-the-types-wrong)
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm attw
 
-            - name: Create mirror GitHub Release
-              if: steps.check.outputs.should_publish == 'true'
-              env:
-                  GH_TOKEN: ${{ github.token }}
-              run: |
-                  VERSION="${{ steps.pkg.outputs.version }}"
-                  PRERELEASE_FLAG=""
-                  if [[ "${{ steps.pkg.outputs.prerelease }}" == "true" ]]; then
-                    PRERELEASE_FLAG="--prerelease"
-                  fi
-                  gh release create "v${VERSION}" \
-                    --title "v${VERSION}" \
-                    --generate-notes \
-                    ${PRERELEASE_FLAG}
+      # Trusted publishing (OIDC): no long-lived NPM_TOKEN. The npm CLI detects the
+      # id-token: write OIDC environment and exchanges it for a short-lived publish
+      # token. pnpm's native publish does not do this exchange, so the publish step
+      # runs through the npm CLI. Requires npm >= 11.5.1 (newer than the npm bundled
+      # with Node 22), hence the upgrade. access + provenance come from publishConfig;
+      # provenance is generated automatically for a public package from a public repo.
+      - name: Upgrade npm for trusted publishing (OIDC)
+        if: steps.check.outputs.should_publish == 'true'
+        run: npm install -g npm@latest
+
+      - name: Publish to npm
+        if: steps.check.outputs.should_publish == 'true'
+        run: npm publish --tag ${{ steps.pkg.outputs.tag }}
+
+      - name: Create mirror GitHub Release
+        if: steps.check.outputs.should_publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.pkg.outputs.version }}"
+          PRERELEASE_FLAG=""
+          if [[ "${{ steps.pkg.outputs.prerelease }}" == "true" ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --generate-notes \
+            ${PRERELEASE_FLAG}

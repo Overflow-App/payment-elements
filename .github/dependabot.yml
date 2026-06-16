@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current (security patches land as new SHAs).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Keep dev dependencies (build/test/types tooling) current.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
