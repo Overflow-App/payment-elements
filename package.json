@@ -77,9 +77,9 @@
     ],
     "devDependencies": {
         "@arethetypeswrong/cli": "^0.18.3",
-        "jsdom": "^25.0.1",
+        "jsdom": "^29.1.1",
         "tsup": "^8.3.5",
-        "typescript": "^5.7.2",
-        "vitest": "^2.1.8"
+        "typescript": "^6.0.3",
+        "vitest": "^4.1.9"
     }
 }
