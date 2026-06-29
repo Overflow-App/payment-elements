@@ -1,85 +1,85 @@
 {
-    "name": "@getoverflow/payment-elements",
-    "version": "0.0.0",
-    "description": "Thin async loader for the Overflow Payment Elements SDK.",
-    "license": "MIT",
-    "type": "module",
-    "packageManager": "pnpm@11.6.0",
-    "sideEffects": [
-        "./dist/index.mjs",
-        "./dist/index.cjs"
-    ],
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "import": {
-                "types": "./dist/index.d.ts",
-                "default": "./dist/index.mjs"
-            },
-            "require": {
-                "types": "./dist/index.d.cts",
-                "default": "./dist/index.cjs"
-            }
-        },
-        "./pure": {
-            "import": {
-                "types": "./dist/pure.d.ts",
-                "default": "./dist/pure.mjs"
-            },
-            "require": {
-                "types": "./dist/pure.d.cts",
-                "default": "./dist/pure.cjs"
-            }
-        },
-        "./types": {
-            "types": "./types/global.d.ts"
-        },
-        "./package.json": "./package.json"
+  "name": "@getoverflow/payment-elements",
+  "version": "0.1.0-alpha.9",
+  "description": "Thin async loader for the Overflow Payment Elements SDK.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.6.0",
+  "sideEffects": [
+    "./dist/index.mjs",
+    "./dist/index.cjs"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
-    "files": [
-        "dist",
-        "types",
-        "LICENSE",
-        "README.md"
-    ],
-    "scripts": {
-        "build": "tsup",
-        "dev": "tsup --watch",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "attw": "attw --pack --profile node16 --exclude-entrypoints ./types",
-        "prepublishOnly": "pnpm build"
+    "./pure": {
+      "import": {
+        "types": "./dist/pure.d.ts",
+        "default": "./dist/pure.mjs"
+      },
+      "require": {
+        "types": "./dist/pure.d.cts",
+        "default": "./dist/pure.cjs"
+      }
     },
-    "engines": {
-        "node": ">=18"
+    "./types": {
+      "types": "./types/global.d.ts"
     },
-    "publishConfig": {
-        "access": "public",
-        "provenance": true
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Overflow-App/payment-elements.git"
-    },
-    "homepage": "https://github.com/Overflow-App/payment-elements#readme",
-    "bugs": {
-        "url": "https://github.com/Overflow-App/payment-elements/issues"
-    },
-    "keywords": [
-        "overflow",
-        "payment-elements",
-        "payments",
-        "loader",
-        "sdk"
-    ],
-    "devDependencies": {
-        "@arethetypeswrong/cli": "^0.18.3",
-        "jsdom": "^25.0.1",
-        "tsup": "^8.3.5",
-        "typescript": "^5.7.2",
-        "vitest": "^2.1.8"
-    }
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "types",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "attw": "attw --pack --profile node16 --exclude-entrypoints ./types",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Overflow-App/payment-elements.git"
+  },
+  "homepage": "https://github.com/Overflow-App/payment-elements#readme",
+  "bugs": {
+    "url": "https://github.com/Overflow-App/payment-elements/issues"
+  },
+  "keywords": [
+    "overflow",
+    "payment-elements",
+    "payments",
+    "loader",
+    "sdk"
+  ],
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
+    "jsdom": "^25.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
 }
