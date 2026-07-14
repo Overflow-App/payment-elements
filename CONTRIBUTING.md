@@ -48,9 +48,30 @@ the correct pnpm version is selected automatically.
 
 ## Releases
 
-Releases are automated. The npm version is baked in the private monorepo and
-mirrors the SDK version 1:1. Maintainers do not publish by hand; merging the
-type-sync PR triggers `pnpm publish` with provenance. See PR 14.5.f.
+Releases are automated and lockstep with the private monorepo SDK version.
+
+1. A human publishes the draft GitHub Release for `payment-elements-v1@<version>`
+   in the monorepo (that is also the prod CDN promote).
+2. `sync-loader-types.yml` opens a bot PR here: regenerated `types/` +
+   `package.json` `version` bump.
+3. A Giving reviewer merges the sync PR.
+4. `release.yml` on `main` (paths: `package.json`) runs typecheck → test →
+   build → `attw`, then **`npm publish` via OIDC trusted publishing**
+   (no `NPM_TOKEN`), then cuts a matching GitHub Release `v<version>`.
+
+### Publish details (maintainers)
+
+- **Auth:** npm Trusted Publisher → GitHub Actions on this repo / workflow
+  `release.yml`. Package policy is "Require 2FA and disallow tokens" — do not
+  add an `NPM_TOKEN` secret.
+- **Dist-tags:** versions with a semver prerelease hyphen (e.g.
+  `0.1.0-alpha.10`) publish under `next`. Bare
+  `npm install @getoverflow/payment-elements` resolves `latest` only.
+- **`latest` flip:** the first non-prerelease (`x.y.z`) CI publish replaces
+  the bootstrap `0.0.0-bootstrap.0` currently on `latest`.
+- **Idempotent:** if `${name}@${version}` already exists on the registry, the
+  workflow skips publish.
+- Do not run `npm publish` from a laptop; OIDC is the only publish path.
 
 ## Security
 
