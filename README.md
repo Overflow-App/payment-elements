@@ -2,7 +2,7 @@
 
 Thin async loader for the [Overflow Payment Elements](https://overflow.co) SDK.
 It injects the Overflow.js bundle from Overflow's CDN and gives you a typed,
-promise-based handle to the SDK -- the same idea as `@stripe/stripe-js`.
+promise-based handle to the SDK.
 
 - Tiny, dependency-free loader (the SDK itself is served from the CDN)
 - First-class TypeScript types, generated from the SDK's source of truth
@@ -22,14 +22,14 @@ npm install @getoverflow/payment-elements
 ```ts
 import { loadOverflow } from '@getoverflow/payment-elements';
 
-const overflow = await loadOverflow('pk_live_...');
+const overflow = await loadOverflow('live_pub_...');
 
 // `overflow` is null in SSR / non-browser contexts -- guard before use.
 overflow?.card().mount('#card');
 ```
 
-Importing the package eagerly starts downloading the CDN bundle (a side effect,
-mirroring `@stripe/stripe-js`), so the SDK is in flight before your app mounts.
+Importing the package eagerly starts downloading the CDN bundle as a side
+effect, so the SDK is in flight before your app mounts.
 
 ### Defer the fetch with `/pure`
 
@@ -42,7 +42,7 @@ same API with **no import side effect** -- nothing loads until you call
 import { loadOverflow } from '@getoverflow/payment-elements/pure';
 
 async function mountCheckout() {
-  const overflow = await loadOverflow('pk_live_...');
+  const overflow = await loadOverflow('live_pub_...');
   overflow?.card().mount('#card');
 }
 ```
@@ -59,7 +59,7 @@ You can also drop the SDK in directly with a script tag, then use the global
 ```html
 <script src="https://cdn.overflow.co/sdk/v1/payment-elements.js"></script>
 <script>
-  const overflow = new Overflow('pk_live_...');
+  const overflow = new Overflow('live_pub_...');
   overflow.card().mount('#card');
 </script>
 ```
