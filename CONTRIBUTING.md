@@ -7,14 +7,15 @@ Thanks for your interest in Overflow Payment Elements.
 This repository is the **public loader** for the Overflow Payment Elements SDK.
 It contains:
 
-- the thin async loader (`loadOverflow`, and the `/pure` opt-out), and
-- the generated TypeScript declarations (`types/index.d.ts`, `types/global.d.ts`).
+- the thin async loader (`loadOverflow`, and the `/pure` opt-out),
+- the generated TypeScript declarations (`types/index.d.ts`, `types/global.d.ts`), and
+- `RELEASE_NOTES.md` (synced merchant-facing notes for the GitHub Release body).
 
 The **core SDK** (the bundle served from `cdn.overflow.co`) is closed-source and
-lives in a private monorepo. The `types/` files in this repo are **generated**
-from that monorepo and synced in automatically on each published release. Do not
-hand-edit anything under `types/` -- those changes are overwritten by the next
-sync.
+lives in a private monorepo. The `types/` files and `RELEASE_NOTES.md` in this
+repo are **generated / synced** from that monorepo on each published release.
+Do not hand-edit anything under `types/` or `RELEASE_NOTES.md` -- those changes
+are overwritten by the next sync.
 
 ## What we welcome
 
@@ -51,13 +52,21 @@ the correct pnpm version is selected automatically.
 Releases are automated and lockstep with the private monorepo SDK version.
 
 1. A human publishes the draft GitHub Release for `payment-elements-v1@<version>`
-   in the monorepo (that is also the prod CDN promote).
+   in the monorepo (that is also the prod CDN promote). Curated merchant-facing
+   notes live in the monorepo at
+   `packages/payment-elements-v1/releases/<sdkVersion>.md`.
 2. `sync-loader-types.yml` opens a bot PR here: regenerated `types/` +
-   `package.json` `version` bump.
-3. A Giving reviewer merges the sync PR.
+   `package.json` `version` bump + `RELEASE_NOTES.md` (copied from that
+   curated file).
+3. A Giving reviewer merges the sync PR after checking the `.d.ts` diff and
+   that `RELEASE_NOTES.md` is appropriate for an external audience.
 4. `release.yml` on `main` (paths: `package.json`) runs typecheck → test →
    build → `attw`, then **`npm publish` via OIDC trusted publishing**
-   (no `NPM_TOKEN`), then cuts a matching GitHub Release `v<version>`.
+   (no `NPM_TOKEN`), then cuts a matching GitHub Release `v<version>`
+   using `--notes-file RELEASE_NOTES.md` (not GitHub auto-notes).
+
+Loader-only fixes stay in lockstep with the next SDK version bump — there
+is no separate loader-only npm version or notes pipeline.
 
 ### Publish details (maintainers)
 
