@@ -182,7 +182,7 @@ export declare type AddressFullNameSlot = Omit<FullNameElementOptions<'compound'
  * their own optional slots (e.g. `fullName?`) rather than mutating
  * the base.
  */
-declare type AddressValue = {
+export declare type AddressValue = {
     line1: string;
     line2: string;
     city: string;
@@ -217,8 +217,9 @@ export declare const AdyenEnvironmentMap: Record<SdkEnvironment, AdyenEnvironmen
  * - `applepay`: `brands` lists the supported networks, and
  *   `configuration` carries the Apple Pay `merchantId` and
  *   `merchantName`.
- * - `googlepay`: `configuration` carries the Google Pay `merchantId`
- *   and `gatewayMerchantId`.
+ * - `googlepay`: `configuration` carries the Google Pay `merchantId`,
+ *   `gatewayMerchantId`, and, when available for the current page
+ *   origin, `authJwt` and `merchantOrigin`.
  * - `ach`: only `name` and `type`.
  */
 export declare type AdyenPaymentMethod = {
@@ -236,6 +237,10 @@ export declare type AdyenPaymentMethod = {
         merchantName?: string;
         /** Google Pay gateway identifier. */
         gatewayMerchantId?: string;
+        /** Authorization token for Google Pay on this origin; forwarded to the wallet when present. */
+        authJwt?: string;
+        /** Page origin hostname Google Pay was initialized for; forwarded to the wallet when present. */
+        merchantOrigin?: string;
     };
 };
 
@@ -2699,7 +2704,7 @@ export declare type FullNameFieldsOptions = {
  * slot on the address-shaped elements (`billingAddress`,
  * `shippingAddress`).
  */
-declare type FullNameValue = {
+export declare type FullNameValue = {
     firstName: string;
     lastName: string;
 };
@@ -3962,6 +3967,12 @@ export declare type WalletChangeExtras = {
  * `walletToken` is the encrypted cryptogram returned by the wallet
  * sheet. Forward it to your payment-processor `/payments` endpoint
  * inside `paymentMethod: { type: walletType, [walletToken-key]: walletToken }`.
+ *
+ * Optional contact / address fields mirror {@link WalletRequireOptions}:
+ * they appear only when the wallet sheet returns them (typically after
+ * the matching `require.*` flag requested collection). Absent fields
+ * are omitted — never `null` or empty placeholders — so a standalone
+ * wallet submit is authorize-ready when `require.email` (etc.) is set.
  */
 export declare type WalletElementValue = {
     /** Encrypted wallet cryptogram returned by the wallet sheet. */
@@ -3971,6 +3982,16 @@ export declare type WalletElementValue = {
      * element and `'googlePay'` for the Google Pay element.
      */
     walletType: 'applePay' | 'googlePay';
+    /** Payer email when the sheet returned one. */
+    email?: string;
+    /** Cardholder / payer name when the sheet returned one. */
+    name?: FullNameValue;
+    /** Payer phone as returned by the sheet (raw string). */
+    phone?: string;
+    /** Billing address when the sheet returned postal address atoms. */
+    billingAddress?: AddressValue;
+    /** Shipping address when the sheet returned postal address atoms. */
+    shippingAddress?: AddressValue;
 };
 
 /**
