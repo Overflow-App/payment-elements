@@ -67,7 +67,7 @@ describe('loadScript', () => {
 
     lastScript()?.dispatchEvent(new Event('error'));
 
-    await expect(promise).rejects.toThrow(/Failed to load Overflow\.js/);
+    await expect(promise).rejects.toThrow(/Failed to load Overflow Payment Elements/);
   });
 
   it('reuses an existing script tag instead of injecting a duplicate', async () => {
@@ -85,7 +85,7 @@ describe('loadScript', () => {
 describe('loadOverflow', () => {
   it('constructs an instance via new window.Overflow(publicKey, options)', async () => {
     const { loadOverflow } = await freshLoad();
-    const promise = loadOverflow('pk_test_123', { locale: 'en' });
+    const promise = loadOverflow('test_pub_123', { locale: 'en' });
 
     // @ts-expect-error -- simulate the CDN bundle attaching the global
     window.Overflow = FakeOverflow;
@@ -93,7 +93,7 @@ describe('loadOverflow', () => {
 
     const instance = (await promise) as FakeOverflow;
     expect(instance).toBeInstanceOf(FakeOverflow);
-    expect(instance.publicKey).toBe('pk_test_123');
+    expect(instance.publicKey).toBe('test_pub_123');
     expect(instance.options).toEqual({ locale: 'en' });
   });
 });

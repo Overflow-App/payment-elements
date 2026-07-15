@@ -23,18 +23,6 @@ let overflowPromise: Promise<OverflowConstructor | null> | null = null;
 const isBrowser = (): boolean =>
   typeof window !== 'undefined' && typeof document !== 'undefined';
 
-const reportFailure = (error: Error): void => {
-  // Soft, dependency-free Sentry breadcrumb: only fires if the host page has
-  // Sentry on the window. We never bundle Sentry into this public loader.
-  const sentry = (window as unknown as { Sentry?: { addBreadcrumb?: (b: unknown) => void } })
-    .Sentry;
-  sentry?.addBreadcrumb?.({
-    category: 'overflow.loader',
-    level: 'error',
-    message: error.message,
-  });
-};
-
 const findExistingScript = (): HTMLScriptElement | null =>
   document.querySelector<HTMLScriptElement>(SCRIPT_SELECTOR);
 
@@ -46,7 +34,7 @@ const injectScript = (): HTMLScriptElement => {
   const parent = document.head ?? document.body;
   if (!parent) {
     throw new Error(
-      'Expected document.head or document.body to be present in order to load Overflow.js',
+      'Expected document.head or document.body to be present in order to load Overflow Payment Elements',
     );
   }
   parent.appendChild(script);
@@ -64,8 +52,8 @@ export const loadScript = (): Promise<OverflowConstructor | null> => {
 
   overflowPromise = new Promise<OverflowConstructor | null>((resolve, reject) => {
     if (!isBrowser()) {
-      // SSR / non-browser: resolve null (matches loadStripe). Do not cache, so a
-      // later client-side call can still load.
+      // SSR / non-browser: resolve null. Do not cache, so a later client-side
+      // call can still load.
       resolve(null);
       overflowPromise = null;
       return;
@@ -88,18 +76,14 @@ export const loadScript = (): Promise<OverflowConstructor | null> => {
       if (window.Overflow) {
         resolve(window.Overflow);
       } else {
-        const error = new Error('Overflow.js loaded but window.Overflow is unavailable');
-        reportFailure(error);
-        reject(error);
+        reject(new Error('Overflow Payment Elements not available'));
       }
     });
 
     script.addEventListener('error', () => {
       // Allow a future call to retry a transient network failure.
       overflowPromise = null;
-      const error = new Error(`Failed to load Overflow.js from ${SDK_URL}`);
-      reportFailure(error);
-      reject(error);
+      reject(new Error('Failed to load Overflow Payment Elements'));
     });
   });
 
