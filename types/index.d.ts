@@ -3386,7 +3386,7 @@ export declare interface OverflowInstance {
      *
      * @example
      * ```ts
-     * const overflow = new Overflow('pk_live_abc');
+     * const overflow = new Overflow('live_pub_...');
      * overflow.locales.getCountries();
      * overflow.locales.getCountryFlagUrl('US');
      * ```
