@@ -951,11 +951,13 @@ export declare type BaseElementOptions<Mode extends ElementMode = 'standalone', 
      * When `true`, the element fails validation if its input is empty
      * at submit time. Defaults to `false`.
      *
-     * Always-required inputs (card number, expiration, security code)
-     * ignore this option: they are required regardless. Multi-field
-     * elements (`billingAddress`, `shippingAddress`, `bank`) accept a
-     * richer {@link MultiFieldRequired} value here so you can mark
-     * individual fields required independently.
+     * Always-required inputs (card number, expiration, and security
+     * code when shown) ignore this option: they are required
+     * regardless. Hide security code with
+     * `fields.cardSecurityCode.hidden` instead. Multi-field elements
+     * (`billingAddress`, `shippingAddress`, `bank`) accept a richer
+     * {@link MultiFieldRequired} value here so you can mark individual
+     * fields required independently.
      */
     required?: boolean;
     /**
@@ -1240,12 +1242,11 @@ export declare interface CardBrowserInfo {
  * Options when creating a card element.
  *
  * `required`, `validate`, and `validateAsync` are not exposed on
- * the card element: every card field is gateway-bound data
- * (always required when rendered) rather than merchant-collected
- * data, so neither option would have a meaningful contract.
- * Suppress the optional holder-name / postal-code inputs via
- * `fields.holderName.hidden` / `fields.postalCode.hidden` instead
- * of toggling required-ness.
+ * the card element: card fields are gateway-bound data rather than
+ * merchant-collected data. Hide optional inputs with
+ * `fields.holderName.hidden`, `fields.postalCode.hidden`, or
+ * `fields.cardSecurityCode.hidden` (mail-order / telephone-order
+ * charges in a virtual terminal). Emits {@link CardElementValue}.
  */
 export declare type CardElementOptions<Mode extends ElementMode = 'standalone'> = Omit<BaseElementOptions<Mode, CardElementValue | null>, 'required' | 'validate' | 'validateAsync'> & {
     elementType: 'card';
@@ -1260,13 +1261,17 @@ export declare type CardElementOptions<Mode extends ElementMode = 'standalone'> 
      * `cardNumber`,
      * `{ inlineRow: ['cardExpiration', 'cardSecurityCode'] }`,
      * `holderName` (when not hidden), `postalCode` (when not hidden).
+     * When `fields.cardSecurityCode.hidden` is `true`, the default
+     * drops `cardSecurityCode` and shows `cardExpiration` on its own
+     * row.
      *
-     * `cardNumber`, `cardExpiration`, and `cardSecurityCode` are
-     * always required: if you omit one from `fieldLayout` it is
-     * appended to the end in default order. To hide the optional
-     * `holderName` or `postalCode` inputs, use
-     * `fields.holderName.hidden` / `fields.postalCode.hidden`;
-     * omitting them from `fieldLayout` also drops them.
+     * `cardNumber` and `cardExpiration` are always required: if you
+     * omit one from `fieldLayout` it is appended to the end in
+     * default order. `cardSecurityCode` follows the same append rule
+     * unless `fields.cardSecurityCode.hidden` is `true`. To hide
+     * `holderName`, `postalCode`, or `cardSecurityCode`, use
+     * `fields.<key>.hidden`; omitting them from `fieldLayout` also
+     * drops them (except always-required number/expiration).
      *
      * @example
      * ```ts
@@ -1286,20 +1291,22 @@ export declare type CardElementOptions<Mode extends ElementMode = 'standalone'> 
 /**
  * Value emitted by the `card` element on `onChange` / `onSubmit`.
  *
- * The card-number, expiry, and CVC inputs render inside PCI-scoped
+ * The card-number, expiry, and CVC inputs appear inside PCI-scoped
  * secured iframes: plaintext digits never leave them. The emitted
  * payload carries the per-field encrypted blobs (which your server
  * forwards to your payment processor) alongside the
  * `riskData` + `browserInfo` required for fraud evaluation and 3DS.
  *
- * `holderName` and `postalCode` are present iff their respective
- * inputs were rendered (`!fields.holderName.hidden` /
- * `!fields.postalCode.hidden`).
+ * `holderName` and `postalCode` are present only when their inputs
+ * are shown (`!fields.holderName.hidden` /
+ * `!fields.postalCode.hidden`). `encryptedSecurityCode` is an empty
+ * string when `fields.cardSecurityCode.hidden` is `true`.
  */
 export declare interface CardElementValue {
     encryptedCardNumber: string;
     encryptedExpiryMonth: string;
     encryptedExpiryYear: string;
+    /** Empty string when `fields.cardSecurityCode.hidden` is `true`. */
     encryptedSecurityCode: string;
     riskData: {
         clientData: string;
@@ -1319,9 +1326,9 @@ export declare type CardExpirationFieldOptions = Pick<BaseFieldOptions, 'label' 
 
 /**
  * Field names accepted in {@link CardElementOptions.fieldLayout}.
- * Covers the three always-required card inputs (number, expiration,
- * security code) and the two optional inputs (cardholder name and
- * postal code).
+ * Covers the gateway-bound card inputs (number, expiration, and
+ * security code; hide the last with `fields.cardSecurityCode.hidden`)
+ * and the two optional inputs (cardholder name and postal code).
  */
 export declare type CardFieldKey = 'cardNumber' | 'cardExpiration' | 'cardSecurityCode' | 'holderName' | 'postalCode';
 
@@ -1348,13 +1355,12 @@ export declare type CardFieldsOptions = {
  * whenever it claims focus itself. To focus a native sub-field after
  * mount, hold a ref to the element and call `.focus()` directly.
  *
- * The card element does not expose `required` options at any level.
- * Card number, expiration, and security code are always required;
- * holder-name and postal-code are always required when rendered
- * (suppress them via `hidden: true` rather than `required: false`).
- * Every card field collects data the payment gateway needs, so
- * `validate?` callbacks are not exposed either. See the `card`
- * row in the `validate` section.
+ * The card element does not expose per-field `required` options.
+ * Card number and expiration are always required; security code,
+ * holder-name, and postal-code are required when shown. Hide any of
+ * those with `fields.<key>.hidden` rather than `required: false`.
+ * Card fields do not expose `validate?` callbacks either; see the
+ * `card` row in the `validate` section.
  */
 export declare type CardNativeFieldOptions = Omit<MultiFieldOptions, 'autoFocus'>;
 
@@ -1436,13 +1442,34 @@ export declare type CardNumberFieldOptions = Pick<BaseFieldOptions, 'label' | 'p
 /**
  * Field options for the card element's security-code input.
  *
- * Like {@link CardNumberFieldOptions} this field is rendered inside
- * a PCI-scoped secured iframe; only `label` and `placeholder` are
- * customizable. The same `placeholder` is shown for both 3-digit
- * (Visa / Mastercard / etc.) and 4-digit (Amex CID) variants,
- * variant-specific copy is not currently configurable.
+ * Like {@link CardNumberFieldOptions}, this field appears inside a
+ * PCI-scoped secured iframe. Customize the host-side `label` and the
+ * iframe `placeholder`, or set `hidden` to omit the field entirely
+ * (same contract as `fields.holderName.hidden` /
+ * `fields.postalCode.hidden`). The same `placeholder` is shown for
+ * both 3-digit (Visa / Mastercard / etc.) and 4-digit (Amex CID)
+ * variants; variant-specific copy is not currently configurable.
+ *
+ * @example
+ * ```ts
+ * // Virtual terminal mail-order / telephone-order charge without CVC.
+ * overflow.card({
+ *   fields: { cardSecurityCode: { hidden: true } },
+ * });
+ * ```
  */
-export declare type CardSecurityCodeFieldOptions = Pick<BaseFieldOptions, 'label' | 'placeholder'>;
+export declare type CardSecurityCodeFieldOptions = Pick<BaseFieldOptions, 'label' | 'placeholder'> & {
+    /**
+     * Hides the security-code field and skips its validation.
+     * Defaults to `false`. Set to `true` for mail-order /
+     * telephone-order charges in a virtual terminal when the
+     * shopper's CVC is unavailable. Remount the element to toggle
+     * this option (for example, when a "Use CVC?" checkbox changes).
+     * When hidden, `encryptedSecurityCode` on the submitted
+     * {@link CardElementValue} is an empty string.
+     */
+    hidden?: boolean;
+};
 
 export declare enum CashPaymentProcessor {
     Adyen = "adyen",
@@ -2832,10 +2859,11 @@ export declare type MultiFieldOptions = BaseFieldOptions & {
  * an object to mark individual fields required independently. Fields
  * omitted from the object default to not required.
  *
- * The card element uses a per-field `required?` flag on its
- * holder-name and postal-code inputs instead, because those are the
- * only optional card inputs (the card number, expiration, and
- * security code are always required and ignore the option).
+ * The card element does not use this shape. Card number and
+ * expiration are always required; security code, holder-name, and
+ * postal-code are required when shown. Hide any of those with
+ * `fields.<key>.hidden` (including `fields.cardSecurityCode.hidden`
+ * for mail-order / telephone-order charges in a virtual terminal).
  *
  * @example
  * ```ts
