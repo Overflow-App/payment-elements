@@ -1,6 +1,6 @@
 {
   "name": "@getoverflow/payment-elements",
-  "version": "0.1.0-alpha.14",
+  "version": "0.1.0-alpha.15",
   "description": "Thin async loader for the Overflow Payment Elements SDK.",
   "license": "MIT",
   "type": "module",
