@@ -1,0 +1,12 @@
+# Paths Semgrep should skip. Prefer fixing findings over ignores.
+# Every entry needs a short reason.
+
+# Generated SDK types — synced from the private monorepo; not hand-authored.
+types/
+
+# Build output (also gitignored; listed for local scans).
+dist/
+
+# Package manager install trees — not source; noisy and not authored here.
+node_modules/
+.pnpm-store/

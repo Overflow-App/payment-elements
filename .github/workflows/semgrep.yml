@@ -1,0 +1,72 @@
+name: Semgrep
+
+# Trigger choice (mirrors Overflow-App/infrastructure semgrep.yml):
+#   - PRs are the primary signal and should gate merges via a required check.
+#   - Weekly cron catches newly-published Semgrep rules on unchanged code.
+#   - workflow_dispatch covers ad-hoc re-runs.
+# Skip post-merge push:main — redundant with required PR checks.
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    # Weekly scan, Mondays 12:35 UTC (offset from infra's 12:20).
+    - cron: '35 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      # Pin the Semgrep CLI image (not :latest) so CI results stay reproducible.
+      # Bump intentionally when adopting a new Semgrep release.
+      image: semgrep/semgrep:1.171.0
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      # Two-tier scan for a tiny JS/TS loader:
+      #   1. Secrets — BLOCKING. Real credentials in source must fail the build.
+      #   2. TypeScript / JavaScript — BLOCKING for this small surface area.
+      #      Carve-outs go in `.semgrepignore` with a comment explaining why.
+      - name: Semgrep — secrets (blocking)
+        run: |
+          semgrep scan \
+            --config=p/secrets \
+            --metrics=off \
+            --error \
+            --text \
+            --sarif-output=semgrep-secrets.sarif \
+            .
+
+      - name: Semgrep — TypeScript / JavaScript (blocking)
+        run: |
+          semgrep scan \
+            --config=p/typescript \
+            --config=p/javascript \
+            --metrics=off \
+            --error \
+            --text \
+            --sarif-output=semgrep-typescript.sarif \
+            src/ test/
+
+      - name: Upload SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: semgrep-sarif
+          path: |
+            semgrep-secrets.sarif
+            semgrep-typescript.sarif
+          retention-days: 90
+          if-no-files-found: error
