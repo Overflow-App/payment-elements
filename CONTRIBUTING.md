@@ -46,6 +46,11 @@ the correct pnpm version is selected automatically.
 2. Make your change with tests.
 3. Ensure `pnpm build`, `pnpm typecheck`, and `pnpm test` pass.
 4. Open a PR. All changes require review from the Giving team (see `CODEOWNERS`).
+5. Expect automated checks on the PR:
+   - **CI** — typecheck / test / build / attw
+   - **Semgrep** — secrets + TypeScript/JavaScript SAST (blocking)
+   - **AWS Inspector** — security / code-quality review bot
+   - **CodeQL** — GitHub code scanning (org-enabled)
 
 ## Releases
 
@@ -85,3 +90,13 @@ is no separate loader-only npm version or notes pipeline.
 ## Security
 
 Do not open public issues for security reports. Email security@overflow.co.
+
+### Scanners (maintainers)
+
+| Tool           | Where                             | Role                               |
+| -------------- | --------------------------------- | ---------------------------------- |
+| Semgrep        | `.github/workflows/semgrep.yml`   | Blocking SAST on PRs + weekly cron |
+| AWS Inspector  | GitHub App on PRs                 | Advisory code review comments      |
+| CodeQL         | GitHub code scanning              | Org/repo default setup             |
+| Socket         | npm registry analysis             | Public supply-chain score / badge  |
+| npm provenance | `publishConfig.provenance` + OIDC | Attests the publish path           |

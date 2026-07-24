@@ -1,6 +1,13 @@
 # @getoverflow/payment-elements
 
-Thin async loader for the [Overflow Payment Elements](https://overflow.co) SDK.
+[![npm next](https://img.shields.io/npm/v/@getoverflow/payment-elements/next.svg)](https://www.npmjs.com/package/@getoverflow/payment-elements?activeTab=versions)
+[![CI](https://github.com/Overflow-App/payment-elements/actions/workflows/ci.yml/badge.svg)](https://github.com/Overflow-App/payment-elements/actions/workflows/ci.yml)
+[![Semgrep](https://github.com/Overflow-App/payment-elements/actions/workflows/semgrep.yml/badge.svg)](https://github.com/Overflow-App/payment-elements/actions/workflows/semgrep.yml)
+[![Socket Badge](https://badge.socket.dev/npm/package/@getoverflow/payment-elements)](https://socket.dev/npm/package/@getoverflow/payment-elements)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/node/v/@getoverflow/payment-elements.svg)](https://nodejs.org)
+
+Async loader for the [Overflow Payment Elements](https://overflow.co) SDK.
 It injects the Overflow.js bundle from Overflow's CDN and gives you a typed,
 promise-based handle to the SDK.
 
@@ -9,7 +16,7 @@ promise-based handle to the SDK.
 - SSR-safe: `loadOverflow(...)` resolves `null` in non-browser environments
 - Loads the latest, always-patched build by policy (see [Latest-only](#latest-only-policy))
 
-Full docs: https://docs.overflow.co · npm: https://www.npmjs.com/package/@getoverflow/payment-elements
+Full docs: https://docs.overflow.co/payment-elements · npm: https://www.npmjs.com/package/@getoverflow/payment-elements
 
 ## Install
 
