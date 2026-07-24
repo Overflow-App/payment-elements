@@ -4,7 +4,7 @@
 [![CI](https://github.com/Overflow-App/payment-elements/actions/workflows/ci.yml/badge.svg)](https://github.com/Overflow-App/payment-elements/actions/workflows/ci.yml)
 [![Semgrep](https://github.com/Overflow-App/payment-elements/actions/workflows/semgrep.yml/badge.svg)](https://github.com/Overflow-App/payment-elements/actions/workflows/semgrep.yml)
 [![Socket Badge](https://badge.socket.dev/npm/package/@getoverflow/payment-elements)](https://socket.dev/npm/package/@getoverflow/payment-elements)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Overflow-App/payment-elements/blob/main/LICENSE)
 [![Node.js](https://img.shields.io/node/v/@getoverflow/payment-elements.svg)](https://nodejs.org)
 
 Async loader for the [Overflow Payment Elements](https://overflow.co) SDK.

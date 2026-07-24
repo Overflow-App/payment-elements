@@ -27,7 +27,9 @@ jobs:
     name: Semgrep
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep:latest
+      # Pin the Semgrep CLI image (not :latest) so CI results stay reproducible.
+      # Bump intentionally when adopting a new Semgrep release.
+      image: semgrep/semgrep:1.171.0
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
