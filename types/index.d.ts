@@ -1325,10 +1325,12 @@ export declare interface CardElementValue {
 export declare type CardExpirationFieldOptions = Pick<BaseFieldOptions, 'label' | 'placeholder'>;
 
 /**
- * Field names accepted in {@link CardElementOptions.fieldLayout}.
- * Covers the gateway-bound card inputs (number, expiration, and
- * security code; hide the last with `fields.cardSecurityCode.hidden`)
- * and the two optional inputs (cardholder name and postal code).
+ * Field names accepted in {@link CardElementOptions.fieldLayout}
+ * and emitted on {@link FieldError.field} for card validation
+ * errors. Covers the gateway-bound card inputs (number, expiration,
+ * and security code; hide the last with
+ * `fields.cardSecurityCode.hidden`) and the two optional inputs
+ * (cardholder name and postal code).
  */
 export declare type CardFieldKey = 'cardNumber' | 'cardExpiration' | 'cardSecurityCode' | 'holderName' | 'postalCode';
 
@@ -2495,15 +2497,10 @@ export declare type ElementMode = 'standalone' | 'compound';
 export declare type ElementOptions = ApplePayElementOptions | BankElementOptions | BillingAddressElementOptions | CardElementOptions | CheckoutElementOptions | CompanyNameElementOptions | CustomCheckboxElementOptions | CustomNumberElementOptions | CustomSelectElementOptions | CustomTextElementOptions | EmailElementOptions | FullNameElementOptions | GooglePayElementOptions | PhoneElementOptions | ShippingAddressElementOptions | SubmitButtonElementOptions;
 
 /**
- * Identifiers for every element kind Payment Elements ships.
- *
- * The card sub-field identifiers (`cardNumber`, `cardExpiry`,
- * `cardCvc`, `cardPostalCode`) are listed here for reference, but
- * they are mounted internally by the `card` element and are not
- * supported for direct creation. Pass one of the other identifiers
- * to create an element.
+ * Name of an element you can create with `create()` or a shorthand
+ * factory (`card()`, `bank()`, `email()`, and so on).
  */
-export declare type ElementType = 'applePay' | 'bank' | 'billingAddress' | 'card' | 'cardNumber' | 'cardExpiry' | 'cardCvc' | 'cardPostalCode' | 'checkbox' | 'checkout' | 'companyName' | 'email' | 'fullName' | 'googlePay' | 'number' | 'phone' | 'select' | 'shippingAddress' | 'submitButton' | 'text';
+export declare type ElementType = 'applePay' | 'bank' | 'billingAddress' | 'card' | 'checkbox' | 'checkout' | 'companyName' | 'email' | 'fullName' | 'googlePay' | 'number' | 'phone' | 'select' | 'shippingAddress' | 'submitButton' | 'text';
 
 /**
  * The options accepted by `element.update()` for each element.
@@ -2518,15 +2515,6 @@ export declare type ElementUpdateOptions = {
     bank: BankElementOptions;
     billingAddress: BillingAddressElementOptions;
     card: CardElementOptions;
-    /**
-     * The split-card fields (`cardNumber`, `cardExpiry`, `cardCvc`,
-     * `cardPostalCode`) live inside the `card` element. Configure
-     * them through `card.update({ fields: { ... } })`.
-     */
-    cardCvc: never;
-    cardExpiry: never;
-    cardNumber: never;
-    cardPostalCode: never;
     checkbox: Omit<CustomCheckboxElementOptions, 'name'>;
     checkout: CheckoutElementOptions;
     companyName: CompanyNameElementOptions;
@@ -2547,10 +2535,6 @@ export declare type ElementValueMap = {
     bank: BankElementValue;
     billingAddress: BillingAddressValue;
     card: CardElementValue;
-    cardCvc: unknown;
-    cardExpiry: unknown;
-    cardNumber: unknown;
-    cardPostalCode: unknown;
     checkbox: boolean;
     checkout: CheckoutElementValue;
     companyName: string;
@@ -2616,12 +2600,16 @@ declare type ExitSupportedElement = 'applePay' | 'googlePay' | 'bank' | 'checkou
  * so there is only one shape to learn for rendering error messaging.
  *
  * `field` strings are documented per-element (e.g. `'cardNumber' |
- * 'expiryDate' | 'cvc' | 'postalCode'` for the card element). They
- * are intentionally typed as `string` here so additional validation
- * rules can be introduced without breaking consumer types.
+ * 'cardExpiration' | 'cardSecurityCode' | 'holderName' |
+ * 'postalCode'` for the card element — matching `fields.*` config
+ * keys). They are intentionally typed as `string` here so additional
+ * validation rules can be introduced without breaking consumer types.
  */
 export declare type FieldError = {
-    /** Element-specific field key (e.g. `'cardNumber'`, `'zip'`, `'phone'`). */
+    /**
+     * Element-specific field key matching that element's `fields.*`
+     * config keys (e.g. `'cardExpiration'`, `'zip'`, `'phone'`).
+     */
     field: string;
     /**
      * Stable machine-readable failure code. Documented per-element;
@@ -3091,6 +3079,12 @@ export declare type OverflowClickGate = {
  * Constructor signature exposed on `window.Overflow` by the CDN
  * bundle. Equivalent to importing `Overflow` from the package.
  *
+ * Page-level singleton: the first `new Overflow(publicKey, options)`
+ * wins. Later constructs return the existing instance, a
+ * `console.warn` is logged, and the new key and options are ignored
+ * (even when the publishable key matches). Call `destroy()` on the
+ * existing instance before constructing again.
+ *
  * The `version` static property carries the bundle's `package.json`
  * version string (injected at build time) so support can verify
  * which build a merchant has loaded:
@@ -3311,6 +3305,13 @@ export declare type OverflowFocusEvent<T extends ElementType = ElementType> = Ov
  * Public surface of an {@link Overflow} instance: the object returned
  * by `new Overflow(publicKey, options)`.
  *
+ * **Singleton.** Only one Overflow instance exists per page. The first
+ * `new Overflow(...)` wins; a later construct returns that same
+ * instance, a `console.warn` is logged, and the new key and options
+ * are ignored (even when the publishable key matches). Call
+ * {@link OverflowInstance.destroy} before constructing again when you
+ * need a fresh instance.
+ *
  * Use one of the per-element shorthand factories (`card`, `bank`,
  * `checkout`, `applePay`, etc.) for the typed-payload experience.
  * Use `create(type, options)` when the element type is computed.
@@ -3422,7 +3423,13 @@ export declare interface OverflowInstance {
     locales: typeof OverflowLocales;
     /** Update global SDK options (appearance, locale). */
     update(options: Partial<OverflowOptions>): void;
-    /** Destroy the Overflow instance and all created elements. */
+    /**
+     * Destroy every created element and clear the page-level singleton
+     * so a later `new Overflow(...)` constructs a fresh instance.
+     * Required before recreating with a new publishable key or options;
+     * otherwise the existing instance is returned and a `console.warn`
+     * is logged.
+     */
     destroy(): void;
     /**
      * Resets the bank field encryption configuration cache.
