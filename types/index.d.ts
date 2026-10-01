@@ -3079,22 +3079,22 @@ export declare type OverflowClickGate = {
  * Constructor signature exposed on `window.Overflow` by the CDN
  * bundle. Equivalent to importing `Overflow` from the package.
  *
- * Page-level singleton: the first `new Overflow(publicKey, options)`
- * wins. Later constructs return the existing instance, a
- * `console.warn` is logged, and the new key and options are ignored
- * (even when the publishable key matches). Call `destroy()` on the
- * existing instance before constructing again.
+ * Page-level singleton: later construction returns the existing instance
+ * with a warning and ignores the new key and options. Call `destroy()`
+ * before constructing with a different key or context. Omitted options
+ * default to merchant routing and default appearance.
  *
- * The `version` static property carries the bundle's `package.json`
- * version string (injected at build time) so support can verify
- * which build a merchant has loaded:
+ * Read `version` to identify the loaded release:
  *
  * ```js
  * window.Overflow.version; // "0.1.0-alpha.1"
  * ```
  */
 export declare type OverflowConstructor = (new (publicKey: PublicKey, options?: OverflowOptions) => OverflowInstance) & {
+    /** Version of the loaded release. */
     readonly version: string;
+    /** Routing modes; use Internal only for approved platform integrations. */
+    readonly RequestMode: typeof SdkRequestMode;
 };
 
 /**
@@ -3421,8 +3421,11 @@ export declare interface OverflowInstance {
      * ```
      */
     locales: typeof OverflowLocales;
-    /** Update global SDK options (appearance, locale). */
-    update(options: Partial<OverflowOptions>): void;
+    /**
+     * Update options used by subsequently created elements.
+     * @throws {Error} If requestContext is supplied. Call destroy() and create a new instance to change it.
+     */
+    update(options: OverflowUpdateOptions): void;
     /**
      * Destroy every created element and clear the page-level singleton
      * so a later `new Overflow(...)` constructs a fresh instance.
@@ -3570,6 +3573,8 @@ declare class OverflowLocales {
  * Per-element overrides (where supported) win over these.
  */
 export declare type OverflowOptions = {
+    /** Advanced integration routing. Defaults to merchant mode; omit unless your integration requires it. Recreate the instance to change it. */
+    requestContext?: SdkRequestContext;
     /** Design tokens applied to every element. */
     appearance?: AppearanceConfig;
     /**
@@ -3615,6 +3620,9 @@ export declare type OverflowSubmitEvent<T extends ElementType = ElementType> = O
     /** Final normalized value for this element. Always populated. */
     value: ElementValueMap[T];
 } & (T extends 'bank' ? BankSubmitExtras : unknown);
+
+/** Options you can update after initialization. Destroy and recreate the instance to change request context. */
+export declare type OverflowUpdateOptions = Omit<OverflowOptions, 'requestContext'>;
 
 /**
  * Emitted when the shopper taps a wallet button (Apple Pay or
@@ -3781,6 +3789,32 @@ declare type Region = {
 export declare type SdkEnvironment = (typeof SdkEnvironmentValues)[number];
 
 export declare const SdkEnvironmentValues: readonly ["demo", "dev", "prod", "stage", "test"];
+
+/**
+ * Provide routing and account context only when required by your integration.
+ *
+ * Environment selection follows the same public-key rules in either mode.
+ */
+export declare type SdkRequestContext = {
+    /** Use the standard merchant integration. */
+    mode: typeof SdkRequestMode.Merchant;
+} | {
+    /** Select an approved platform integration. Access requires separately configured credentials. */
+    mode: typeof SdkRequestMode.Internal;
+    /** Provide the selected account's 24-character hexadecimal nonprofit ID. */
+    nonprofitId: string;
+};
+
+/** Select the routing mode required by your integration. */
+export declare const SdkRequestMode: Readonly<{
+    /** Use the standard merchant integration. */
+    readonly Merchant: "merchant";
+    /** Reserved for approved platform integrations. Does not grant access. */
+    readonly Internal: "internal";
+}>;
+
+/** Available routing modes, derived from the shared request-mode constants. */
+export declare type SdkRequestMode = (typeof SdkRequestMode)[keyof typeof SdkRequestMode];
 
 /**
  * Section header for a checkout section (`contact`, `billingAddress`,
